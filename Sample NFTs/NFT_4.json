@@ -1,0 +1,9 @@
+{
+  "name": "Quiz Champion Blades of Chaos holder",
+  "description": "Awarded to a player who scored 100% in the blockchain quiz.",
+  "image": "ipfs://bafkreia2qywufgebnfy7anifapbye6an3q5s3faqv53rgujqaiswefdcue", 
+  "attributes": [
+    { "trait_type": "Achievement", "value": "Quiz Master" },
+    { "trait_type": "Score", "value": "10/10" }
+  ]
+}

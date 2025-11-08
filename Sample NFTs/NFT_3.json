@@ -1,0 +1,9 @@
+{
+  "name": "Quiz Champion Druapnir Spear holder",
+  "description": "Awarded to a player who scored 100% in the blockchain quiz.",
+  "image": "ipfs://bafkreidsvogsyydwsnksfce2iv2qfpc2gp4w2wsxgsjdslhiiz7xzmcp7y", 
+  "attributes": [
+    { "trait_type": "Achievement", "value": "Quiz Master" },
+    { "trait_type": "Score", "value": "10/10" }
+  ]
+}

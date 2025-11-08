@@ -5,56 +5,50 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract QuizToken is ERC20, Ownable {
-    uint256 public constant ENTRY_FEE = 1 * 10 ** 18; // 1 token (with decimals)
-    uint256 public constant MAX_REWARD = 3 * 10 ** 18; // 3 tokens max
+    uint256 public constant TOKENS_PER_ETH = 100 * 10**18; // 1 ETH = 100 QZT
+    uint256 public constant ENTRY_FEE = 1 * 10**18;        // 1 QZT per quiz
+    mapping(address => bool) public inQuiz;
 
-    mapping(address => bool) public inQuiz; // Tracks active players
+    constructor() ERC20("QuizToken", "QZT") Ownable(msg.sender) {}
 
-    constructor() ERC20("QuizToken", "QZT") Ownable(msg.sender) {
-        _mint(msg.sender, 100 * 10 ** 18); // initial supply for testing/admin
+    /* ---------------- BUY TOKENS ---------------- */
+    function buyTokens() external payable {
+        require(msg.value > 0, "Send ETH to buy tokens");
+        uint256 amount = (msg.value * TOKENS_PER_ETH) / 1 ether;
+        _mint(msg.sender, amount);
     }
 
-    // Player pays 1 token to enter quiz
-    function enterQuiz() external {
-        require(
-            balanceOf(msg.sender) >= ENTRY_FEE,
-            "Insufficient tokens to enter"
-        );
-        require(!inQuiz[msg.sender], "Already in a quiz");
-
-        _transfer(msg.sender, owner(), ENTRY_FEE); // send entry fee to admin/game pool
-        inQuiz[msg.sender] = true;
+    function withdrawETH() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
     }
 
-    // Owner (backend or admin) rewards player based on score
-    function rewardPlayer(
-        address player,
-        uint8 correctAnswers,
-        uint8 totalQuestions
-    ) external onlyOwner {
-        require(inQuiz[player], "Player not in quiz");
-        require(totalQuestions > 0, "Invalid quiz data");
-        require(correctAnswers <= totalQuestions, "Invalid answer count");
+    /* ---------------- ENTER OR LEAVE QUIZ ---------------- */
+    function toggleQuiz() external {
+        if (inQuiz[msg.sender]) {
+            // leave
+            inQuiz[msg.sender] = false;
+        } else {
+            // enter
+            require(balanceOf(msg.sender) >= ENTRY_FEE, "Not enough tokens");
+            // burn entry fee instead of transferring to owner
+            _burn(msg.sender, ENTRY_FEE);
+            inQuiz[msg.sender] = true;
+        }
+    }
 
-        uint256 reward = 0;
+    /* ---------------- REWARD PLAYER ---------------- */
+    function rewardPlayer(uint8 correct, uint8 total) external {
+        require(inQuiz[msg.sender], "Not in quiz");
+        require(total > 0, "Invalid total");
 
-        uint8 threshold = uint8((totalQuestions * 80 + 99) / 100); // avoids rounding errors
+        uint8 threshold =5; // 80% or more = reward
 
-        if (correctAnswers >= threshold && correctAnswers < totalQuestions) {
-            reward = 1 * 10 ** 18; // 1 token for 80% or more correct
-        } else if (correctAnswers == totalQuestions) {
-            reward = MAX_REWARD; // 3 tokens for perfect score
+        if (correct >= threshold && correct < total) {
+            _mint(msg.sender, 1 * 10**18); // 1 QZT for ≥80%
+        } else if (correct == total) {
+            _mint(msg.sender, 3 * 10**18); // 3 QZT for perfect score
         }
 
-        if (reward > 0) {
-            _mint(player, reward);
-        }
-
-        inQuiz[player] = false; // mark quiz as completed
-    }
-
-    // Admin can mint tokens for liquidity or testing
-    function mint(address to, uint256 amount) external onlyOwner {
-        _mint(to, amount);
+        inQuiz[msg.sender] = false;
     }
 }

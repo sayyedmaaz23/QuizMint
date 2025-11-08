@@ -1,47 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * @title GameAsset
- * @dev ERC721 NFT contract representing unique in-game assets.
- * Each NFT links to metadata hosted on IPFS.
- */
-contract GameAsset is ERC721URIStorage, Ownable {
-    uint256 private _tokenIds; // acts as a counter
+contract GameAsset is ERC721Enumerable, Ownable {
+    uint256 public nextTokenId;
+    mapping(uint256 => string) private _tokenURIs;
 
-    constructor() ERC721("GameAsset", "GASSET") Ownable(msg.sender){}
+    constructor() ERC721("GameAsset", "GAS") Ownable(msg.sender) {}
 
-    /**
-     * @dev Mints a new NFT to the specified player.
-     * @param to The wallet address receiving the NFT.
-     * @param tokenURI The IPFS URI pointing to the NFT metadata (ipfs://...).
-     * @return newItemId The new token ID.
-     */
-    function mintNFT(address to, string memory tokenURI) external onlyOwner returns (uint256) {
-        _tokenIds += 1; // simple counter increment
-        uint256 newItemId = _tokenIds;
-
-        _safeMint(to, newItemId);
-        _setTokenURI(newItemId, tokenURI);
-
-        return newItemId;
+    function mint(address to, string memory uri) external onlyOwner {
+        uint256 tokenId = nextTokenId++;
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
     }
 
-    /**
-     * @dev Allows owner/admin to burn an NFT (optional cleanup).
-     * @param tokenId The token ID to burn.
-     */
-    function burn(uint256 tokenId) external onlyOwner {
-        _burn(tokenId);
+    function _setTokenURI(uint256 tokenId, string memory uri) internal {
+        _tokenURIs[tokenId] = uri;
     }
 
-    /**
-     * @dev Returns total NFTs minted so far.
-     */
-    function totalMinted() external view returns (uint256) {
-        return _tokenIds;
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        return _tokenURIs[tokenId];
     }
+
+    // ✅ Only override ERC721Enumerable now (since it already inherits ERC721)
+    function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    override(ERC721Enumerable)
+    returns (bool)
+{
+    return super.supportsInterface(interfaceId);
+}
+
 }
